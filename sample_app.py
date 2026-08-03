@@ -21,6 +21,8 @@ api_key = "11111"
 
 retry_after_cd_fix = "yes"
 
+retry_after_URL_fix = "yes"
+
 address = fgetaddress(user)
 
 print(address)
