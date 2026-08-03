@@ -60,7 +60,7 @@ jobs:
           git fetch origin ${{ github.base_ref }} --depth=1
           git diff origin/${{ github.base_ref }}...HEAD > pr_diff.txt
           echo "PR diff generated"
-          wc -1 pr_diff.txt
+          wc -l pr_diff.txt
           head -50 pr_diff.txt
 
       - name: Create Payload
