@@ -25,6 +25,8 @@ retry_after_URL_fix = "yes"
 
 retry_after_wc_fix = "yes"
 
+retry_after_jsonload_issue_fix = "yes"
+
 address = fgetaddress(user)
 
 print(address)
