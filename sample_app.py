@@ -3,7 +3,7 @@ return user.get("address")
 
 
 def login_user(request):
-  password = "Admin12349"
+  password = "Admin123"
 
   username = request.get("username")
 
@@ -16,6 +16,8 @@ def login_user(request):
 user = {
     "name": "Manu"
 }
+
+api_key = "12345"
 
 address = fgetaddress(user)
 
