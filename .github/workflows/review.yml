@@ -92,7 +92,7 @@ jobs:
           python - << 'EOF'
           import json
 
-          with open("review_result.json","r", encoding="utf-8") as f:
+          with open("review_result.json", "r", encoding="utf-8") as f:
               data = json.load(f)
 
           security = data.get("security", [])
@@ -102,9 +102,9 @@ jobs:
           risk = data.get("risk", 0)
 
           def section(title, items):
-          if items:
-              returns "## " + title + "\n".join(["- " + str(x) for x in items])
-          return "## " + title + "\n- No findings."
+              if items:
+                  returns "## " + title + "\n".join(["- " + str(x) for x in items])
+              return "## " + title + "\n- No findings."
 
           comment = "# CodeGuardian AI Review\n\n"
           comment += f"**Risk Score:**{risk}\n\n"
