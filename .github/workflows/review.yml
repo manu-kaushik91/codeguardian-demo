@@ -31,8 +31,10 @@ jobs:
 
       - name: Start CodeGuardian API
         run: |
+          cd backend
           nohup uvicorn backend.main:app --host 127.0.0.1 --port 8000 > server.log 2>&1 &
           sleep 10
+          cat server.log
 
       - name: Generate PR Diff
         run: |
@@ -53,11 +55,13 @@ jobs:
 
       - name: Run CodeGuardian Review
         run: |
-          curl -X POST http://127.0.0.1:8000/review \
+          curl --fail --show-error --silent -X POST http://127.0.0.1:8000/review \
             -H "Content-Type: application/json" \
             --data @payload.json \
             -o review_result.json
 
+          cat review_result.json
+          
       - name: Show Review Result
         run: |
           cat review_result.json
