@@ -52,7 +52,7 @@ jobs:
           
       - name: Verify CodeGuardian API is running
         run: |
-          curl --fail --show-error vhttp://127.0.0.1:8000/docs
+          curl --fail --show-error http://127.0.0.1:8000/docs
           echo "CodeGuardian API is running successfully"
 
       - name: Generate PR Diff
