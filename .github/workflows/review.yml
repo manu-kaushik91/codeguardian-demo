@@ -1,7 +1,100 @@
-name: CodeGuardian
-on: [pull_request]
+name: CodeGuardian AI Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
- review:
-  runs-on: ubuntu-latest
-  steps:
-   - uses: actions/checkout@v4
+  review:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install fastapi uvicorn openai gitpython pydantic requests
+
+      - name: Start CodeGuardian API
+        run: |
+          nohup uvicorn backend.main:app --host 127.0.0.1 --port 8000 > server.log 2>&1 &
+          sleep 10
+
+      - name: Generate PR Diff
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          git diff origin/${{ github.base_ref }}...HEAD > pr_diff.txt
+
+      - name: Create Payload
+        run: |
+          python - << 'EOF'
+          import json
+
+          with open("pr_diff.txt", "r", encoding="utf-8", errors="ignore") as f:
+              diff = f.read()
+
+          with open("payload.json", "w") as f:
+              json.dump({"diff": diff}, f)
+          EOF
+
+      - name: Run CodeGuardian Review
+        run: |
+          curl -X POST http://127.0.0.1:8000/review \
+            -H "Content-Type: application/json" \
+            --data @payload.json \
+            -o review_result.json
+
+      - name: Show Review Result
+        run: |
+          cat review_result.json
+
+      - name: Create Review Comment
+        run: |
+          python - << 'EOF'
+          import json
+
+          with open("review_result.json") as f:
+              data = json.load(f)
+
+          comment = f"""
+          # CodeGuardian AI Review
+
+          Risk Score: {data.get('risk')}
+
+          ## Security Findings
+          {chr(10).join(['- ' + x for x in data.get('security', [])])}
+
+          ## Quality Findings
+          {chr(10).join(['- ' + x for x in data.get('quality', [])])}
+
+          ## Historical Defects
+          {chr(10).join(['- ' + x for x in data.get('defects', [])])}
+
+          ## Suggested Tests
+          {chr(10).join(['- ' + x for x in data.get('tests', [])])}
+          """
+
+          with open("review_comment.md", "w") as f:
+              f.write(comment)
+          EOF
+
+      - name: Post Comment To Pull Request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment ${{ github.event.pull_request.number }} \
+            --body-file review_comment.md
