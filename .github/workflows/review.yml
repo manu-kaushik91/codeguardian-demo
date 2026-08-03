@@ -93,7 +93,7 @@ jobs:
           import json
 
           with open("review_result.json","r", encoding="utf-8") as f:
-              data = json'load(f)
+              data = json.load(f)
 
           security = data.get("security", [])
           quality = data.get("quality", [])
