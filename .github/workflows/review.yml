@@ -46,7 +46,7 @@ jobs:
           cd backend
           nohup python -m uvicorn main:app --host 127.0.0.1 --port 8000 > ../server.log 2>&1 &
           sleep 10
-          cd..
+          cd ..
           echo "server log:"
           cat server.log
           
