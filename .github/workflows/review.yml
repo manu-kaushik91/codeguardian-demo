@@ -103,7 +103,7 @@ jobs:
 
           def section(title, items):
               if items:
-                  returns "## " + title + "\n" + "\n".join(["- " + str(x) for x in items])
+                  return "## " + title + "\n" + "\n".join(["- " + str(x) for x in items])
               return "## " + title + "\n- No findings."
 
           comment = "# CodeGuardian AI Review\n\n"
