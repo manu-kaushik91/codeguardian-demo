@@ -31,6 +31,8 @@ retry_after_indentation_fix = "yes"
 
 retry_after_syntax_fix = "yes"
 
+retry_after_return_fix = "yes"
+
 address = fgetaddress(user)
 
 print(address)
