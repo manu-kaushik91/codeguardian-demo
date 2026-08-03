@@ -3,6 +3,7 @@ name: CodeGuardian AI Review
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -10,7 +11,7 @@ permissions:
   issues: write
 
 jobs:
-  review:
+  codeguardian-review:
     runs-on: ubuntu-latest
 
     steps:
@@ -19,6 +20,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Show repository structure
+        run: |
+          echo "Current Folder:"
+          pwd
+          echo "Repository files:"
+          ls -la
+          echo "Backend files:"
+          ls -la backend
+          echo "Backend agents:"
+          ls -la backend/agents
+          
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -32,14 +44,24 @@ jobs:
       - name: Start CodeGuardian API
         run: |
           cd backend
-          nohup uvicorn backend.main:app --host 127.0.0.1 --port 8000 > server.log 2>&1 &
+          nohup python -m uvicorn main:app --host 127.0.0.1 --port 8000 > ../server.log 2>&1 &
           sleep 10
+          cd..
+          echo "server log:"
           cat server.log
+          
+      - name: Verify CodeGuardian API is running
+        run: |
+          curl --fail --show-error vhttp://127.0.0.1:8000/docs
+          echo "CodeGuardian API is running successfully"
 
       - name: Generate PR Diff
         run: |
-          git fetch origin ${{ github.base_ref }}
+          git fetch origin ${{ github.base_ref }} --depth=1
           git diff origin/${{ github.base_ref }}...HEAD > pr_diff.txt
+          echo "PR diff generated"
+          wc -1 pr_diff.txt
+          head -50 pr_diff.txt
 
       - name: Create Payload
         run: |
@@ -49,8 +71,10 @@ jobs:
           with open("pr_diff.txt", "r", encoding="utf-8", errors="ignore") as f:
               diff = f.read()
 
-          with open("payload.json", "w") as f:
+          with open("payload.json", "w", encoding="utf-8") as f:
               json.dump({"diff": diff}, f)
+
+          print("Payload created successfully")
           EOF
 
       - name: Run CodeGuardian Review
@@ -60,45 +84,47 @@ jobs:
             --data @payload.json \
             -o review_result.json
 
+          echo "Review result:"
           cat review_result.json
           
-      - name: Show Review Result
-        run: |
-          cat review_result.json
-
       - name: Create Review Comment
         run: |
           python - << 'EOF'
           import json
 
-          with open("review_result.json") as f:
-              data = json.load(f)
+          with open("review_result.json","r", encoding="utf-8") as f:
+              data = json'load(f)
 
-          comment = f"""
-          # CodeGuardian AI Review
+          security = data.get("security", [])
+          quality = data.get("quality", [])
+          defects = data.get("defects", [])
+          tests = data.get("tests", [])
+          risk = data.get("risk", 0)
 
-          Risk Score: {data.get('risk')}
+          def section(title, items):
+          if items:
+              returns "## " + title + "\n".join(["- " + str(x) for x in items])
+          return "## " + title + "\n- No findings."
 
-          ## Security Findings
-          {chr(10).join(['- ' + x for x in data.get('security', [])])}
-
-          ## Quality Findings
-          {chr(10).join(['- ' + x for x in data.get('quality', [])])}
-
-          ## Historical Defects
-          {chr(10).join(['- ' + x for x in data.get('defects', [])])}
-
-          ## Suggested Tests
-          {chr(10).join(['- ' + x for x in data.get('tests', [])])}
-          """
-
-          with open("review_comment.md", "w") as f:
+          comment = "# CodeGuardian AI Review\n\n"
+          comment += f"**Risk Score:**{risk}\n\n"
+          comment += section("Security Findings", security) + "\n\n"
+          comment += section("Quality Findings", quality) + "\n\n"
+          comment += section("Historical Defect Matches", defects) + "\n\n"
+          comment += section("Suggested Tests", tests) + "\n\n"
+          comment += "---\nGenerated automatically by CodeGuardian AI."
+          
+          with open("review_comment.md", "w", encoding="utf-8") as f:
               f.write(comment)
+
+          print(comment)
           EOF
 
       - name: Post Comment To Pull Request
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+           gh pr comment ${{ github.event.pull_request.number }} --body-file review_comment.md
         run: |
           gh pr comment ${{ github.event.pull_request.number }} \
             --body-file review_comment.md
