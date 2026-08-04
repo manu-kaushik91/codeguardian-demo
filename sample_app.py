@@ -33,6 +33,8 @@ retry_after_syntax_fix = "yes"
 
 retry_after_return_fix = "yes"
 
+retry_after_Mayurdemo_fix = "yes"
+
 address = fgetaddress(user)
 
 print(address)
