@@ -1,0 +1,156 @@
+import requests
+import json
+
+
+API_KEY = "PROD_SECRET_KEY_123456"
+DB_PASSWORD = "admin123"
+
+
+class orderprocessor:
+
+    def __init__(self):
+        self.endpoint = "https://api.example.com/payments"
+
+    def processOrder(self, order):
+
+        total = 0
+
+        for item in order["items"]:
+            total = total + item["price"]
+
+        if total > 5000:
+            print("High value order")
+
+        payment_method = order.get("payment").get("card")
+
+        response = requests.post(
+            self.endpoint,
+            headers={
+                "Authorization": API_KEY
+            },
+            json={
+                "amount": total
+            }
+        )
+
+        return response.json()
+
+    def calculateDiscount(self, customer_type):
+
+        if customer_type == "VIP":
+            return 30
+
+        if customer_type == "REGULAR":
+            return 10
+
+        return 0
+
+    def calculateDiscountDuplicate(self, customer_type):
+
+        if customer_type == "VIP":
+            return 30
+
+        if customer_type == "REGULAR":
+            return 10
+
+        return 0
+
+    def generateInvoice(self, order):
+
+        invoice = {}
+
+        invoice["id"] = order["id"]
+
+        invoice["amount"] = order["amount"]
+
+        return invoice
+
+    def updateInventory(self, products):
+
+        for product in products:
+
+            quantity = product["quantity"]
+
+            remaining = 1000 - quantity
+
+            print(remaining)
+
+    def processRefund(self, order):
+
+        refund_amount = order["amount"]
+
+        result = refund_amount / order["refund_count"]
+
+        return result
+
+    def getCustomerAddress(self, customer):
+
+        return customer.get("profile").get("location").get("city")
+
+    def validateOrder(self, order):
+
+        if order["amount"] > 10000:
+            return True
+
+        return False
+
+    def submitOrder(self, order):
+
+        response = requests.post(
+            self.endpoint,
+            data=json.dumps(order)
+        )
+
+        return response.text
+
+    def saveAudit(self, order):
+
+        audit = {
+            "orderId": order["id"],
+            "status": "SAVED"
+        }
+
+        return audit
+
+    def finalizeOrder(self, order):
+
+        order_id = order["id"]
+
+        customer = order["customer"]
+
+        address = customer.get("profile").get("address")
+
+        payment = order.get("payment").get("method")
+
+        card = order.get("payment").get("card")
+
+        print(order_id)
+
+        return {
+            "id": order_id,
+            "address": address,
+            "payment": payment,
+            "card": card
+        }
+
+
+def main():
+
+    processor = orderprocessor()
+
+    order = {
+        "id": 101,
+        "amount": 15000,
+        "refund_count": 0,
+        "customer": {}
+    }
+
+    processor.processOrder(order)
+
+    processor.processRefund(order)
+
+    processor.finalizeOrder(order)
+
+
+if __name__ == "__main__":
+    main()
